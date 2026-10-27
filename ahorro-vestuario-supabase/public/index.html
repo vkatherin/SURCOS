@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ahorro del Vestuario</title>
+<meta name="description" content="Plataforma de ahorro del colectivo para el vestuario del Carnaval de Negros y Blancos.">
+<meta name="theme-color" content="#120B18">
+<link rel="icon" href="img/icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<!-- ============ CARGANDO ============ -->
+<section id="vCargando" class="cargando">
+  <div class="marca-logo"><b>A</b></div>
+</section>
+
+<!-- ============ INGRESO ============ -->
+<section id="vLogin" class="login" hidden>
+  <div class="login-arte">
+    <canvas id="confetiLogin" aria-hidden="true"></canvas>
+    <div class="marca">
+      <div class="marca-logo"><b>A</b></div>
+      <div class="marca-texto"><span class="js-colectivo">Ahorro del Vestuario</span><small>Carnaval de Negros y Blancos</small></div>
+    </div>
+    <div>
+      <h1 class="login-titulo">Ahorremos para <em>el vestuario</em></h1>
+      <p class="login-sub">Cada integrante anota lo que va guardando y la tesorería confirma lo recibido. Todos vemos cuánto llevamos para el desfile.</p>
+    </div>
+    <div class="login-cuenta num"><b class="js-dias">–</b><span class="js-dias-txt">días para el desfile del 3 de enero</span></div>
+    <div class="ajedrez" aria-hidden="true"></div>
+  </div>
+
+  <div class="login-panel">
+    <div class="login-card">
+      <div>
+        <h2 id="loginTitulo">Ingresa a tu cuenta</h2>
+        <p class="muted" id="loginSub" style="margin-top:4px">Usa el correo con el que te registraste.</p>
+      </div>
+
+      <div class="pestanas solo-login" role="tablist">
+        <button type="button" role="tab" id="tabIngresar" aria-selected="true">Ingresar</button>
+        <button type="button" role="tab" id="tabRegistro" aria-selected="false">Crear cuenta</button>
+      </div>
+
+      <form class="form" id="formLogin" novalidate>
+        <label class="campo" id="campoNombre" hidden>Tu nombre completo
+          <input id="lNombre" autocomplete="name" maxlength="60" placeholder="Como aparece en el colectivo">
+        </label>
+        <label class="campo">Correo electrónico
+          <input id="lCorreo" type="email" autocomplete="email" placeholder="tucorreo@gmail.com" required>
+        </label>
+        <label class="campo">Contraseña
+          <input id="lClave" type="password" autocomplete="current-password" minlength="6" placeholder="Mínimo 6 caracteres" required>
+        </label>
+        <button class="btn bloque" type="submit" id="btnLogin">Ingresar</button>
+        <div class="msg" id="lMsg" role="status"></div>
+        <button type="button" class="link" id="btnOlvide" style="justify-self:center">Olvidé mi contraseña</button>
+      </form>
+
+      <form class="form" id="formNuevaClave" novalidate hidden>
+        <label class="campo">Contraseña nueva
+          <input id="ncClave" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo 6 caracteres">
+        </label>
+        <label class="campo">Repite la contraseña
+          <input id="ncClave2" type="password" autocomplete="new-password" minlength="6">
+        </label>
+        <button class="btn bloque" type="submit">Guardar contraseña</button>
+        <div class="msg" id="ncMsg" role="status"></div>
+      </form>
+
+      <div class="aviso" id="avisoLocal" hidden><b>Modo de prueba.</b> Supabase no está configurado: las cuentas y los datos se guardan solo en este navegador. Mira el archivo LEEME.md para conectarlo.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APLICACIÓN ============ -->
+<div id="vApp" hidden>
+  <header class="top">
+    <div class="top-in">
+      <div class="marca">
+        <div class="marca-logo"><b>A</b></div>
+        <div class="marca-texto"><span class="js-colectivo">Ahorro del Vestuario</span><small>Ahorro del vestuario</small></div>
+      </div>
+      <div class="usuario">
+        <div class="avatar" id="uAvatar">?</div>
+        <div style="min-width:0">
+          <div class="usuario-nombre" id="uNombre"></div>
+          <div class="usuario-rol" id="uRol"></div>
+        </div>
+        <button type="button" class="btn-salir" id="btnSalir">Salir</button>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Secciones">
+      <div class="nav-in" role="tablist">
+        <button type="button" role="tab" data-vista="mi" aria-selected="true" id="navMi">Mi ahorro</button>
+        <button type="button" role="tab" data-vista="colectivo" aria-selected="false">Colectivo</button>
+        <button type="button" role="tab" data-vista="tesoreria" aria-selected="false" id="navTes" hidden>Tesorería<span class="badge" id="badgePend" hidden>0</span></button>
+      </div>
+    </nav>
+    <div class="serpentina"></div>
+  </header>
+
+  <main class="main">
+
+    <!-- ---------- Unirse (vincular cuenta con integrante) ---------- -->
+    <section id="pUnirse" class="unirse stack" hidden>
+      <div class="card">
+        <div>
+          <div class="eyebrow">Un paso más</div>
+          <h2 style="margin-top:4px">¿Quién eres en el colectivo?</h2>
+          <p class="muted" style="margin-top:6px">Elige tu nombre para conectar tu cuenta con tus ahorros. Si no apareces, agrégate.</p>
+        </div>
+        <div class="opciones-nombre" id="listaLibres"></div>
+        <form class="form" id="formUnirse">
+          <label class="campo">No estoy en la lista. Mi nombre es:
+            <input id="uNuevoNombre" maxlength="60" placeholder="Nombre y apellido">
+          </label>
+          <button class="btn" type="submit">Unirme al colectivo</button>
+          <div class="msg" id="uMsg" role="status"></div>
+        </form>
+        <button type="button" class="link" id="btnSoloAdmin" hidden>Solo administro, no ahorro</button>
+      </div>
+    </section>
+
+    <!-- ---------- Mi ahorro ---------- -->
+    <section id="pMi" class="stack" hidden>
+      <div class="hola">
+        <div>
+          <div class="eyebrow" id="miSaludoEyebrow">Mi ahorro</div>
+          <h1 id="miSaludo">Hola</h1>
+        </div>
+        <div class="cuenta num">
+          <div class="cuenta-num js-dias">–</div>
+          <div class="cuenta-txt"><b>días</b><span class="js-dias-corto">para el 3 de enero</span></div>
+        </div>
+      </div>
+
+      <div class="card mi-ahorro">
+        <div class="serp"></div>
+        <div class="mi-ahorro-in">
+          <div class="anillo">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <defs>
+                <linearGradient id="gradAnillo" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#FFC93D"/><stop offset=".5" stop-color="#FF4FA6"/><stop offset="1" stop-color="#2CC7CF"/>
+                </linearGradient>
+              </defs>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="12"/>
+              <circle id="anilloProg" cx="60" cy="60" r="50" fill="none" stroke="url(#gradAnillo)" stroke-width="12" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16" style="transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1)"/>
+            </svg>
+            <div class="anillo-centro num"><div><b id="miPct">0%</b><small>de mi meta</small></div></div>
+          </div>
+          <div class="cifras num">
+            <div>
+              <div class="eyebrow" style="color:rgba(255,255,255,.7)">Llevo ahorrado</div>
+              <div class="cifra-grande" id="miTotal">$ 0</div>
+            </div>
+            <div class="cifras-fila">
+              <div><span>Meta</span><b id="miMeta">–</b></div>
+              <div><span>Me falta</span><b id="miFalta">–</b></div>
+              <div><span>Por confirmar</span><b id="miPend">$ 0</b></div>
+            </div>
+            <div class="sugerido" id="miSugerido" hidden></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-side">
+        <div class="card">
+          <div class="card-head"><h2>Mis ahorros</h2><span class="muted num" id="miConteo"></span></div>
+          <div class="movs" id="miMovs"></div>
+        </div>
+
+        <form class="card form" id="formAporte" autocomplete="off">
+          <div>
+            <h2>Anotar un ahorro</h2>
+            <p class="muted" id="aAyuda" style="margin-top:4px;font-size:13.5px">Queda <b>por confirmar</b> hasta que la tesorería lo reciba.</p>
+          </div>
+          <div class="dos">
+            <label class="campo">Valor en pesos
+              <input id="aMonto" inputmode="numeric" placeholder="20.000" required>
+            </label>
+            <label class="campo">Fecha
+              <input id="aFecha" type="date" required>
+            </label>
+          </div>
+          <div class="campo">Cómo lo entregaste
+            <div class="medios" id="aMedios"></div>
+          </div>
+          <label class="campo">Nota <span class="ayuda">(opcional)</span>
+            <input id="aNota" maxlength="80" placeholder="Ej. cuota de la quincena">
+          </label>
+          <button class="btn" type="submit">Guardar ahorro</button>
+          <div class="msg" id="aMsg" role="status"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ---------- Colectivo ---------- -->
+    <section id="pColectivo" class="stack" hidden>
+      <div class="hola">
+        <div>
+          <div class="eyebrow">Carnaval de Negros y Blancos</div>
+          <h1 class="js-colectivo">Ahorro del Vestuario</h1>
+        </div>
+        <div class="cuenta num">
+          <div class="cuenta-num js-dias">–</div>
+          <div class="cuenta-txt"><b>días</b><span class="js-dias-corto">para el 3 de enero</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="eyebrow">Ahorrado entre todos</div>
+            <div class="cifra-grande num" id="cTotal" style="margin-top:4px">$ 0</div>
+          </div>
+          <div class="num muted" id="cMetaTxt" style="text-align:right"></div>
+        </div>
+        <div class="barra grande"><i id="cBarra" style="width:0%"></i></div>
+        <div class="card-head num" style="font-size:13.5px"><span id="cPct" class="muted"></span><span id="cFalta" class="muted"></span></div>
+      </div>
+
+      <div class="resumen num">
+        <div class="dato" style="--c:var(--fucsia)"><span>Integrantes</span><b id="rIntegrantes">0</b></div>
+        <div class="dato" style="--c:var(--verde)"><span>Ya cumplieron la meta</span><b id="rCumplieron">0</b></div>
+        <div class="dato" style="--c:var(--turquesa)"><span>Confirmado por tesorería</span><b id="rConfirmado">$ 0</b></div>
+        <div class="dato" style="--c:var(--amarillo)"><span>Por confirmar</span><b id="rPendiente">$ 0</b></div>
+      </div>
+
+      <div class="grid-side">
+        <div class="card">
+          <div class="card-head">
+            <h2>Integrantes</h2>
+            <div class="toolbar">
+              <select id="cOrden" aria-label="Ordenar">
+                <option value="nombre">Por nombre</option>
+                <option value="avance">Más avance</option>
+                <option value="falta">Les falta más</option>
+              </select>
+            </div>
+          </div>
+          <div class="personas" id="cPersonas"></div>
+        </div>
+        <div class="card">
+          <h2>Últimos movimientos</h2>
+          <div class="movs" id="cFeed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- Tesorería ---------- -->
+    <section id="pTesoreria" class="stack" hidden>
+      <div class="hola">
+        <div>
+          <div class="eyebrow">Solo para la tesorería</div>
+          <h1>Tesorería</h1>
+        </div>
+        <button type="button" class="btn negro" id="btnExportar">Descargar Excel (CSV)</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Por confirmar</h2><span class="muted num" id="tPendTxt"></span></div>
+        <div class="movs" id="tPendientes"></div>
+      </div>
+
+      <div class="grid-2">
+        <form class="card form" id="formAporteAdm" autocomplete="off">
+          <div>
+            <h2>Anotar a nombre de alguien</h2>
+            <p class="muted" style="margin-top:4px;font-size:13.5px">Para quien te entregó en efectivo. Queda confirmado de una vez.</p>
+          </div>
+          <label class="campo">Integrante
+            <select id="tInt" required><option value="">Elige a la persona…</option></select>
+          </label>
+          <div class="dos">
+            <label class="campo">Valor en pesos
+              <input id="tMonto" inputmode="numeric" placeholder="20.000" required>
+            </label>
+            <label class="campo">Fecha
+              <input id="tFecha" type="date" required>
+            </label>
+          </div>
+          <div class="campo">Medio
+            <div class="medios" id="tMedios"></div>
+          </div>
+          <label class="campo">Nota <span class="ayuda">(opcional)</span>
+            <input id="tNota" maxlength="80">
+          </label>
+          <button class="btn" type="submit">Guardar y confirmar</button>
+          <div class="msg" id="tMsg" role="status"></div>
+        </form>
+
+        <form class="card form" id="formInt" autocomplete="off">
+          <div>
+            <h2>Agregar integrante</h2>
+            <p class="muted" style="margin-top:4px;font-size:13.5px">Luego esa persona crea su cuenta y elige su nombre.</p>
+          </div>
+          <label class="campo">Nombre
+            <input id="iNombre" maxlength="60" placeholder="Nombre y apellido" required>
+          </label>
+          <label class="campo">Meta personal <span class="ayuda">(vacío = meta general)</span>
+            <input id="iMeta" inputmode="numeric" placeholder="Ej. 450.000">
+          </label>
+          <button class="btn" type="submit">Agregar</button>
+          <div class="msg" id="iMsg" role="status"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Integrantes y cuentas</h2>
+          <div class="toolbar"><input id="tBuscar" type="search" placeholder="Buscar nombre…" aria-label="Buscar integrante"></div>
+        </div>
+        <div class="movs" id="tIntegrantes"></div>
+      </div>
+
+      <form class="card form" id="formCfg" autocomplete="off">
+        <h2>Ajustes del colectivo</h2>
+        <div class="dos">
+          <label class="campo">Nombre del colectivo
+            <input id="cfNombre" maxlength="80">
+          </label>
+          <label class="campo">Fecha del desfile
+            <input id="cfFecha" type="date">
+          </label>
+        </div>
+        <div class="dos">
+          <label class="campo">Meta general por integrante
+            <input id="cfMeta" inputmode="numeric" placeholder="Ej. 450.000">
+          </label>
+          <label class="campo">Correos de la tesorería <span class="ayuda">(separados por coma)</span>
+            <input id="cfAdmins" placeholder="tesorera@gmail.com, presidente@gmail.com">
+          </label>
+        </div>
+        <button class="btn" type="submit" style="justify-self:start">Guardar ajustes</button>
+        <div class="msg" id="cfMsg" role="status"></div>
+      </form>
+    </section>
+
+    <!-- ---------- Configuración inicial ---------- -->
+    <section id="pInicio" class="unirse stack" hidden>
+      <form class="card form" id="formInicio" autocomplete="off">
+        <div>
+          <div class="eyebrow">Bienvenida, tesorería</div>
+          <h2 style="margin-top:4px">Configura el colectivo</h2>
+          <p class="muted" style="margin-top:6px">Eres la primera persona en entrar, así que quedas como administradora. Después puedes agregar más correos de tesorería.</p>
+        </div>
+        <label class="campo">Nombre del colectivo
+          <input id="inNombre" maxlength="80" value="Danzantes del Cerrillo" required>
+        </label>
+        <div class="dos">
+          <label class="campo">Meta por integrante
+            <input id="inMeta" inputmode="numeric" placeholder="Ej. 450.000">
+          </label>
+          <label class="campo">Fecha del desfile
+            <input id="inFecha" type="date" value="2027-01-03">
+          </label>
+        </div>
+        <button class="btn" type="submit">Empezar</button>
+        <div class="msg" id="inMsg" role="status"></div>
+      </form>
+    </section>
+
+    <p class="pie" id="pie"></p>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<canvas id="confeti" aria-hidden="true"></canvas>
+
+<!-- Supabase (librería incluida en la carpeta) -->
+<script src="js/vendor/supabase.js"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/servicio.js"></script>
+<script src="js/confeti.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

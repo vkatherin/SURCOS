@@ -1,0 +1,20 @@
+# Render Blueprint: publica la plataforma como sitio estático (gratis).
+# Render → New → Blueprint → elige el repositorio de GitHub.
+services:
+  - type: web
+    name: ahorro-vestuario
+    runtime: static
+    buildCommand: node scripts/generar-config.js
+    staticPublishPath: ./public
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /js/*
+        name: Cache-Control
+        value: no-cache
