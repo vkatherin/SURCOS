@@ -14,6 +14,6 @@
 //  Mientras url esté vacío, la plataforma funciona en MODO DE PRUEBA.
 // =============================================================
 window.SUPABASE_CONFIG = {
-  url: "",
-  anonKey: ""
+  url: "https://owejuaztappdsvsenoyo.supabase.co",
+  anonKey: "sb_publishable_V-z8YYglSEfDL7dEB5h4kg_mXH0EPl0"
 };

@@ -5,6 +5,7 @@
   "description": "Plataforma de ahorro del colectivo para el vestuario del Carnaval de Negros y Blancos",
   "scripts": {
     "build": "node scripts/generar-config.js",
-    "start": "npx --yes serve public -l 3000"
+    "start": "node server.js",
+    "dev": "node server.js"
   }
 }

@@ -1,0 +1,10 @@
+# Ignorar únicamente las carpetas residuales en la raíz
+/css/
+/img/
+/js/
+
+# Dependencias y temporales
+node_modules/
+npm-debug.log*
+.DS_Store
+Thumbs.db

@@ -5,6 +5,7 @@
 --
 --  Seguridad (Row Level Security):
 --  - Solo personas con sesión iniciada ven los datos.
+--  - Cada integrante ve SOLO sus propios ahorros; la tesorería ve todo.
 --  - La tesorería (correos en config.admins) administra todo.
 --  - Cada integrante solo anota ahorros a SU nombre y quedan
 --    'pendiente' hasta que la tesorería los confirme.
@@ -15,7 +16,7 @@
 -- ---------- Tablas ----------
 create table if not exists public.config (
   id      text primary key default 'general' check (id = 'general'),
-  nombre  text   not null default '',
+  nombre  text   not null default 'Danzantes del Cerrillo',
   meta    bigint not null default 0 check (meta >= 0),
   fecha   date   not null default '2027-01-03',
   admins  text[] not null default '{}'
@@ -116,8 +117,10 @@ create policy "config: tesorería edita" on public.config
   with check (cardinality(admins) > 0);
 
 -- integrantes
+-- Tesorería ve todo; cada quien se ve a sí mismo y los nombres libres (para unirse)
 create policy "integrantes: leer" on public.integrantes
-  for select to authenticated using (true);
+  for select to authenticated
+  using (public.es_admin() or uid = auth.uid() or uid is null);
 create policy "integrantes: crear" on public.integrantes
   for insert to authenticated
   with check (public.es_admin() or (uid = auth.uid() and meta = 0));
@@ -129,8 +132,13 @@ create policy "integrantes: tesorería borra" on public.integrantes
   for delete to authenticated using (public.es_admin());
 
 -- aportes
+-- Tesorería ve todos los ahorros; cada quien ve solo los suyos
 create policy "aportes: leer" on public.aportes
-  for select to authenticated using (true);
+  for select to authenticated
+  using (
+    public.es_admin()
+    or exists (select 1 from public.integrantes i where i.id = aportes.integrante_id and i.uid = auth.uid())
+  );
 create policy "aportes: anotar" on public.aportes
   for insert to authenticated
   with check (

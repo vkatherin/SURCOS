@@ -51,7 +51,10 @@
       "permission-denied": "No tienes permiso para hacer esto. Si crees que es un error, habla con la tesorería.",
       "local/recuperar": "En modo de prueba no se puede recuperar la contraseña. Crea otra cuenta."
     };
-    return mapa[c] || "Algo salió mal. Revisa tu conexión e intenta de nuevo.";
+    const base = mapa[c] || "Algo salió mal. Revisa tu conexión e intenta de nuevo.";
+    // Muestra el detalle técnico cuando no sabemos exactamente qué pasó
+    const detalle = e && e.message && (c === "auth/network-request-failed" || !mapa[c]) ? " (Detalle: " + e.message + ")" : "";
+    return base + detalle;
   }
 
   // Confirmación con dos toques (sin ventanas emergentes)
@@ -126,9 +129,9 @@
     $$(".js-dias").forEach(el => el.textContent = dl > 0 ? dl : (dl === 0 ? "¡Hoy!" : "0"));
     $$(".js-dias-txt").forEach(el => el.textContent = dl > 0 ? "días para el desfile del " + dia : (dl === 0 ? "¡Hoy es el desfile!" : "El desfile ya pasó"));
     $$(".js-dias-corto").forEach(el => el.textContent = dl >= 0 ? "para el " + dia : "el desfile ya pasó");
-    const nombre = (cfg && cfg.nombre) || "Ahorro del Vestuario";
+    const nombre = (cfg && cfg.nombre) || "Danzantes del Cerrillo";
     $$(".js-colectivo").forEach(el => el.textContent = nombre);
-    document.title = cfg && cfg.nombre ? cfg.nombre + " · Ahorro del Vestuario" : "Ahorro del Vestuario";
+    document.title = cfg && cfg.nombre ? cfg.nombre + " · Ahorro del Vestuario" : "Danzantes del Cerrillo · Ahorro del Vestuario";
   }
 
   // ---------- INGRESO ----------
@@ -259,15 +262,18 @@
     if (!cfg) activa = "pInicio";
     else if (!mio && !(admin && soloAdmin())) activa = "pUnirse";
     else {
-      if (vista === "mi" && !mio) vista = admin ? "tesoreria" : "colectivo";
-      if (vista === "tesoreria" && !admin) vista = mio ? "mi" : "colectivo";
+      // Los integrantes solo ven "Mi ahorro"; la tesorería ve todo
+      if (!admin) vista = "mi";
+      if (vista === "mi" && !mio) vista = "tesoreria";
       activa = { mi: "pMi", colectivo: "pColectivo", tesoreria: "pTesoreria" }[vista];
     }
     secciones.forEach(s => $(s).hidden = s !== activa);
-    const navVisible = activa === "pMi" || activa === "pColectivo" || activa === "pTesoreria";
+    // Un integrante solo tiene "Mi ahorro": no hace falta mostrar pestañas
+    const navVisible = admin && (activa === "pMi" || activa === "pColectivo" || activa === "pTesoreria");
     document.querySelector(".nav").hidden = !navVisible;
     $("navMi").hidden = !mio;
     $("navTes").hidden = !admin;
+    document.querySelector('.nav button[data-vista="colectivo"]').hidden = !admin;
     $$(".nav button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.vista === vista)));
     const pendientes = aportes.filter(a => a.estado !== "recibido" && integrantes.some(i => i.id === a.integranteId));
     $("badgePend").hidden = !pendientes.length;

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ahorro del Vestuario</title>
-<meta name="description" content="Plataforma de ahorro del colectivo para el vestuario del Carnaval de Negros y Blancos.">
+<title>Danzantes del Cerrillo · Ahorro del Vestuario</title>
+<meta name="description" content="Plataforma de ahorro del colectivo coreográfico Danzantes del Cerrillo para el vestuario del Carnaval de Negros y Blancos.">
 <meta name="theme-color" content="#120B18">
-<link rel="icon" href="img/icono.svg" type="image/svg+xml">
+<link rel="icon" href="img/plumas.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;500;600;700&display=swap">
@@ -16,16 +16,15 @@
 
 <!-- ============ CARGANDO ============ -->
 <section id="vCargando" class="cargando">
-  <div class="marca-logo"><b>A</b></div>
+  <img src="img/logo-claro.png" alt="Danzantes del Cerrillo" class="logo-cargando">
 </section>
 
 <!-- ============ INGRESO ============ -->
 <section id="vLogin" class="login" hidden>
   <div class="login-arte">
     <canvas id="confetiLogin" aria-hidden="true"></canvas>
-    <div class="marca">
-      <div class="marca-logo"><b>A</b></div>
-      <div class="marca-texto"><span class="js-colectivo">Ahorro del Vestuario</span><small>Carnaval de Negros y Blancos</small></div>
+    <div class="marca marca-login">
+      <img src="img/logo-claro.png" alt="Danzantes del Cerrillo" class="logo-login">
     </div>
     <div>
       <h1 class="login-titulo">Ahorremos para <em>el vestuario</em></h1>
@@ -83,8 +82,9 @@
   <header class="top">
     <div class="top-in">
       <div class="marca">
-        <div class="marca-logo"><b>A</b></div>
-        <div class="marca-texto"><span class="js-colectivo">Ahorro del Vestuario</span><small>Ahorro del vestuario</small></div>
+        <img src="img/logo-claro.png" alt="Danzantes del Cerrillo" class="logo-top">
+        <span class="marca-sep" aria-hidden="true"></span>
+        <div class="marca-texto"><span>Ahorro del vestuario</span><small>Carnaval de Negros y Blancos</small></div>
       </div>
       <div class="usuario">
         <div class="avatar" id="uAvatar">?</div>
@@ -113,7 +113,7 @@
         <div>
           <div class="eyebrow">Un paso más</div>
           <h2 style="margin-top:4px">¿Quién eres en el colectivo?</h2>
-          <p class="muted" style="margin-top:6px">Elige tu nombre para conectar tu cuenta con tus ahorros. Si no apareces, agrégate.</p>
+          <p class="muted" style="margin-top:6px">Elige tu nombre para conectar tu cuenta con tus ahorros. Solo tú y la tesorería verán lo que ahorres.</p>
         </div>
         <div class="opciones-nombre" id="listaLibres"></div>
         <form class="form" id="formUnirse">
@@ -206,7 +206,7 @@
       <div class="hola">
         <div>
           <div class="eyebrow">Carnaval de Negros y Blancos</div>
-          <h1 class="js-colectivo">Ahorro del Vestuario</h1>
+          <h1 class="js-colectivo">Danzantes del Cerrillo</h1>
         </div>
         <div class="cuenta num">
           <div class="cuenta-num js-dias">–</div>
