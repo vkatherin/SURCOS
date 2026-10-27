@@ -47,6 +47,7 @@
       "auth/email-not-confirmed": "Primero confirma tu correo: abre el enlace que te enviamos (revisa también spam).",
       "auth/confirmar-correo": "Te enviamos un correo para confirmar tu cuenta. Ábrelo y luego ingresa aquí.",
       "duplicado": "Ese registro ya existe (por ejemplo, ese nombre ya tiene una cuenta).",
+      "falta-sql": "Falta preparar la base de datos: corre el archivo supabase/03-foto-vestuario.sql en el SQL Editor de Supabase.",
       "auth/network-request-failed": "Sin conexión a internet. Revisa tu red.",
       "permission-denied": "No tienes permiso para hacer esto. Si crees que es un error, habla con la tesorería.",
       "local/recuperar": "En modo de prueba no se puede recuperar la contraseña. Crea otra cuenta."
@@ -224,7 +225,10 @@
     };
     desuscribir.push(S.db.escuchar("config", docs => {
       const d = docs.find(x => x.id === "general");
-      cfg = d ? { nombre: d.nombre || "", meta: Number(d.meta) || 0, fecha: d.fecha || FECHA_DEFECTO, admins: (d.admins || []).map(x => String(x).toLowerCase()) } : null;
+      cfg = d ? { nombre: d.nombre || "", meta: Number(d.meta) || 0, fecha: d.fecha || FECHA_DEFECTO, admins: (d.admins || []).map(x => String(x).toLowerCase()),
+        fotoTexto: d.fotoTexto || "",
+        fotos: (Array.isArray(d.fotos) && d.fotos.length ? d.fotos : (d.fotoUrl ? [{ url: d.fotoUrl, ruta: d.fotoRuta || "", texto: "" }] : []))
+          .filter(f => f && f.url) } : null;
       cargado.config = true; render();
     }, alError));
     desuscribir.push(S.db.escuchar("integrantes", docs => {
@@ -352,6 +356,7 @@
       metasCelebradas.add(mio.id);
     }
     renderMi._ya = true;
+    pintarVestuario(pct, meta, total);
 
     const mios = aportes.filter(a => a.integranteId === mio.id).sort(ordenReciente);
     $("miConteo").textContent = mios.length ? mios.length + (mios.length === 1 ? " registro" : " registros") : "";
@@ -389,6 +394,187 @@
       window.celebrar();
     } catch (err) { msg("aMsg", textoError(err), true); }
   });
+
+  // ---------- Fotos del vestuario (carrusel) ----------
+  const MAX_FOTOS = 8, SEGUNDOS_FOTO = 3;
+  const fotosDe = () => (cfg && cfg.fotos) || [];
+  let carrusel = { i: 0, firma: "", timer: null, pausa: false };
+
+  function pintarVestuario(pct, meta, total) {
+    const fotos = fotosDe(), hay = fotos.length > 0;
+    $("miVestuario").hidden = !hay;
+    $("miTop").classList.toggle("sin-foto", !hay);
+    if (!hay) { pararCarrusel(); carrusel.firma = ""; return; }
+    // Solo se reconstruyen las imágenes si cambió la lista de fotos
+    const firma = fotos.map(f => f.url).join("|");
+    if (firma !== carrusel.firma) {
+      carrusel.firma = firma; carrusel.i = Math.min(carrusel.i, fotos.length - 1);
+      $("miVestuarioFotos").innerHTML = fotos.map((f, i) =>
+        `<img src="${esc(f.url)}" alt="${esc(f.texto || "Foto del vestuario " + (i + 1))}" class="${i === carrusel.i ? "activa" : ""}" ${i ? 'loading="lazy"' : ""}>`).join("");
+      $("miVestuarioPuntos").innerHTML = fotos.length > 1 ? fotos.map((_, i) =>
+        `<button type="button" role="tab" aria-label="Foto ${i + 1} de ${fotos.length}" data-foto="${i}"></button>`).join("") : "";
+      iniciarCarrusel();
+    }
+    mostrarFoto(carrusel.i);
+    $("miVestuarioAvance").textContent = !meta ? "Tu meta aún no está definida"
+      : total >= meta ? "¡Tu traje está completo!" : "Llevas el " + Math.floor(pct) + " % de tu traje";
+    $("miVestuarioBarra").style.width = pct + "%";
+  }
+  function mostrarFoto(i) {
+    const fotos = fotosDe(); if (!fotos.length) return;
+    carrusel.i = (i + fotos.length) % fotos.length;
+    $$("#miVestuarioFotos img").forEach((im, k) => im.classList.toggle("activa", k === carrusel.i));
+    $$("#miVestuarioPuntos button").forEach((bt, k) => {
+      bt.setAttribute("aria-selected", "false");
+      if (k === carrusel.i) { void bt.offsetWidth; bt.setAttribute("aria-selected", "true"); }
+    });
+    const f = fotos[carrusel.i];
+    $("miVestuarioTexto").textContent = (f && f.texto) || cfg.fotoTexto || "Nuestro vestuario";
+  }
+  function pararCarrusel() { clearInterval(carrusel.timer); carrusel.timer = null; }
+  function iniciarCarrusel() {
+    pararCarrusel();
+    if (fotosDe().length < 2) return;
+    carrusel.timer = setInterval(() => {
+      if (document.hidden || $("miVestuario").hidden) return;
+      mostrarFoto(carrusel.i + 1);
+    }, SEGUNDOS_FOTO * 1000);
+  }
+  $("miVestuarioPuntos").addEventListener("click", e => {
+    const b = e.target.closest("[data-foto]"); if (!b) return;
+    mostrarFoto(Number(b.dataset.foto)); iniciarCarrusel();
+  });
+  // Deslizar con el dedo en el celular
+  let toqueX = null;
+  $("miVestuario").addEventListener("touchstart", e => { toqueX = e.touches[0].clientX; }, { passive: true });
+  $("miVestuario").addEventListener("touchend", e => {
+    if (toqueX === null) return;
+    const dx = e.changedTouches[0].clientX - toqueX; toqueX = null;
+    if (Math.abs(dx) > 40) { mostrarFoto(carrusel.i + (dx < 0 ? 1 : -1)); iniciarCarrusel(); }
+  });
+
+  // Reduce la foto antes de subirla (más rápida en datos móviles)
+  function reducirImagen(archivo, lado = 1400) {
+    return new Promise((ok, mal) => {
+      const url = URL.createObjectURL(archivo), img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, lado / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        const ctx = c.getContext("2d"); ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(b => b ? ok(b) : mal(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); mal(new Error("formato")); };
+      img.src = url;
+    });
+  }
+
+  // ---------- Editor de fotos (tesorería) ----------
+  let subiendo = 0;
+  function pintarEditorFoto() {
+    const fotos = fotosDe();
+    $("fotosConteo").textContent = fotos.length ? fotos.length + " de " + MAX_FOTOS : "";
+    const lleno = fotos.length >= MAX_FOTOS;
+    $("btnAgregarFotos").classList.toggle("deshabilitado", lleno || subiendo > 0);
+    $("btnAgregarFotos").textContent = subiendo ? "Subiendo " + subiendo + "…" : lleno ? "Máximo 8 fotos" : "Agregar fotos";
+    $("fotoArchivo").disabled = lleno || subiendo > 0;
+    const activo = document.activeElement;
+    const editando = activo && activo.dataset && activo.dataset.textoFoto !== undefined;
+    if (!editando) {
+      $("fotosGrid").innerHTML = fotos.length ? fotos.map((f, i) => `
+        <div class="foto-item">
+          <div class="foto-item-img"><img src="${esc(f.url)}" alt="Foto ${i + 1}"><span class="foto-num">${i + 1}</span></div>
+          <input data-texto-foto="${i}" maxlength="60" value="${esc(f.texto || "")}" placeholder="Texto de esta foto (opcional)" aria-label="Texto de la foto ${i + 1}">
+          <div class="foto-acciones">
+            <button type="button" class="icono-btn" data-mover="${i}" data-dir="-1" ${i === 0 ? "disabled" : ""} aria-label="Mover antes">←</button>
+            <button type="button" class="icono-btn" data-mover="${i}" data-dir="1" ${i === fotos.length - 1 ? "disabled" : ""} aria-label="Mover después">→</button>
+            <button type="button" class="link danger" data-quitar-foto="${i}">Quitar</button>
+          </div>
+        </div>`).join("")
+        : `<div class="vacio" style="grid-column:1/-1"><b>Todavía no hay fotos</b>Toca “Agregar fotos” y elige una o varias imágenes del vestuario.</div>`;
+    }
+    if (activo !== $("fotoTexto")) $("fotoTexto").value = (cfg && cfg.fotoTexto) || "";
+  }
+  async function guardarFotos(lista) {
+    await S.db.actualizar("config", "general", { fotos: lista });
+    cfg.fotos = lista; // se ve de inmediato, sin esperar a la recarga
+  }
+  function errorFotos(err) {
+    msg("fotoMsg", err && (err.code === "permission-denied" || err.code === "falta-sql")
+      ? "Falta preparar la base de datos: corre supabase/04-varias-fotos.sql en el SQL Editor de Supabase."
+      : textoError(err), true);
+  }
+  $("fotoArchivo").addEventListener("change", async e => {
+    const archivos = Array.from(e.target.files || []); e.target.value = "";
+    if (!archivos.length) return;
+    const espacio = MAX_FOTOS - fotosDe().length;
+    const elegidos = archivos.slice(0, espacio);
+    if (archivos.length > espacio) msg("fotoMsg", "Solo caben " + espacio + " foto(s) más. Se subirán las primeras.", true);
+    subiendo = elegidos.length; pintarEditorFoto();
+    let nuevas = [], fallidas = 0;
+    for (const f of elegidos) {
+      try {
+        const blob = await reducirImagen(f);
+        const r = await S.archivos.subir(blob, "vestuario.jpg");
+        nuevas.push({ url: r.url, ruta: r.ruta, texto: "" });
+      } catch (err) {
+        if (err && (err.code === "falta-sql" || err.code === "permission-denied")) { errorFotos(err); fallidas = elegidos.length; break; }
+        fallidas++;
+      }
+      subiendo--; pintarEditorFoto();
+    }
+    subiendo = 0;
+    if (nuevas.length) {
+      try {
+        await guardarFotos(fotosDe().concat(nuevas));
+        msg("fotoMsg", nuevas.length === 1 ? "¡Foto publicada!" : "¡" + nuevas.length + " fotos publicadas!");
+        window.celebrar();
+      } catch (err) { errorFotos(err); nuevas.forEach(n => S.archivos.borrar(n.ruta)); }
+    }
+    if (fallidas && nuevas.length) msg("fotoMsg", fallidas + " foto(s) no se pudieron subir. Usa JPG o PNG (las HEIC del iPhone no sirven: sube un pantallazo).", true);
+    else if (fallidas && !nuevas.length && !$("fotoMsg").classList.contains("err")) msg("fotoMsg", "No se pudo subir. Usa fotos JPG o PNG (las HEIC del iPhone no sirven: sube un pantallazo).", true);
+    pintarEditorFoto(); render();
+  });
+  $("fotosGrid").addEventListener("click", async e => {
+    const bt = e.target.closest("button"); if (!bt) return;
+    const lista = fotosDe().slice();
+    try {
+      if (bt.dataset.mover !== undefined) {
+        const i = Number(bt.dataset.mover), j = i + Number(bt.dataset.dir);
+        if (j < 0 || j >= lista.length) return;
+        [lista[i], lista[j]] = [lista[j], lista[i]];
+        await guardarFotos(lista);
+      } else if (bt.dataset.quitarFoto !== undefined) {
+        const i = Number(bt.dataset.quitarFoto);
+        if (!confirmar(bt, "qf" + i, "¿Quitar?")) return;
+        const [quitada] = lista.splice(i, 1);
+        await guardarFotos(lista);
+        S.archivos.borrar(quitada.ruta);
+        msg("fotoMsg", "Foto quitada.");
+      }
+      pintarEditorFoto(); render();
+    } catch (err) { errorFotos(err); }
+  });
+  // Texto de cada foto: se guarda al salir del campo
+  $("fotosGrid").addEventListener("change", async e => {
+    const inp = e.target; if (inp.dataset.textoFoto === undefined) return;
+    const lista = fotosDe().map(f => ({ ...f }));
+    const i = Number(inp.dataset.textoFoto); if (!lista[i]) return;
+    lista[i].texto = inp.value.trim();
+    try { await guardarFotos(lista); msg("fotoMsg", "Texto guardado."); } catch (err) { errorFotos(err); }
+  });
+  $("fotoTexto").addEventListener("change", async () => {
+    try { await S.db.actualizar("config", "general", { fotoTexto: $("fotoTexto").value.trim() }); msg("fotoMsg", "Título guardado."); }
+    catch (err) { errorFotos(err); }
+  });
+
+  // ---------- App en el celular ----------
+  // Se instala desde el menú del navegador ("Agregar a pantalla de inicio")
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(err => console.warn("Service worker:", err)));
+  }
 
   // ---------- Colectivo ----------
   function renderColectivo(mio) {
@@ -477,6 +663,7 @@
     if (activo !== $("cfFecha")) $("cfFecha").value = cfg.fecha || FECHA_DEFECTO;
     if (activo !== $("cfMeta")) $("cfMeta").value = miles(cfg.meta);
     if (activo !== $("cfAdmins")) $("cfAdmins").value = cfg.admins.join(", ");
+    pintarEditorFoto();
   }
   $("tBuscar").addEventListener("input", render);
 
@@ -566,23 +753,43 @@
     } catch (err) { msg("inMsg", textoError(err), true); }
   });
 
-  // ---------- Exportar CSV (abre en Excel) ----------
-  $("btnExportar").addEventListener("click", () => {
+  // ---------- Descargar Excel con diseño ----------
+  function datosParaExcel() {
     const nombreDe = {}; integrantes.forEach(i => nombreDe[i.id] = i.nombre);
+    const s = sumas();
+    return {
+      colectivo: (cfg && cfg.nombre) || "Danzantes del Cerrillo",
+      fechaDesfile: fechaDesfile(),
+      integrantes: integrantes.map(i => ({ nombre: i.nombre, meta: metaDe(i), ahorrado: s.total[i.id] || 0, confirmado: s.conf[i.id] || 0 })),
+      movimientos: aportes.filter(a => nombreDe[a.integranteId]).map(a => ({
+        fecha: a.fecha, integrante: nombreDe[a.integranteId], valor: a.monto, medio: a.medio || "",
+        estado: a.estado, nota: a.nota || "", anotadoPor: a.registradoNombre || "", recibidoPor: a.recibidoPor || ""
+      }))
+    };
+  }
+  // Respaldo: CSV sencillo por si el Excel con diseño no se puede crear
+  function descargarCSV(d) {
     const celda = v => { const t = String(v ?? ""); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
     const filas = [["Integrante", "Fecha", "Valor", "Medio", "Estado", "Nota", "Anotado por", "Recibido por"]];
-    aportes.filter(a => nombreDe[a.integranteId]).sort((a, b) => ordenNombre({ nombre: nombreDe[a.integranteId] }, { nombre: nombreDe[b.integranteId] }) || (a.fecha || "").localeCompare(b.fecha || ""))
-      .forEach(a => filas.push([nombreDe[a.integranteId], a.fecha, a.monto, a.medio || "", a.estado === "recibido" ? "Recibido" : "Por confirmar", a.nota || "", a.registradoNombre || "", a.recibidoPor || ""]));
-    filas.push([]);
-    filas.push(["RESUMEN POR INTEGRANTE"]);
-    filas.push(["Integrante", "Meta", "Ahorrado", "Confirmado", "Falta"]);
-    const s = sumas();
-    integrantes.slice().sort(ordenNombre).forEach(i => { const m = metaDe(i), t = s.total[i.id] || 0; filas.push([i.nombre, m, t, s.conf[i.id] || 0, Math.max(0, m - t)]); });
-    const csv = "﻿" + filas.map(f => f.map(celda).join(";")).join("\r\n");
+    d.movimientos.forEach(m => filas.push([m.integrante, m.fecha, m.valor, m.medio, m.estado === "recibido" ? "Recibido" : "Por confirmar", m.nota, m.anotadoPor, m.recibidoPor]));
+    const csv = "\uFEFF" + filas.map(f => f.map(celda).join(";")).join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a"); a.href = url; a.download = "ahorro-vestuario-" + hoyISO() + ".csv";
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast("Archivo descargado");
+  }
+  $("btnExportar").addEventListener("click", async () => {
+    const b = $("btnExportar"), texto = b.textContent;
+    b.disabled = true; b.textContent = "Preparando Excel…";
+    const d = datosParaExcel();
+    try {
+      await window.exportarExcel(d);
+      toast("Excel descargado");
+    } catch (err) {
+      console.error("Excel:", err);
+      descargarCSV(d);
+      toast("No se pudo crear el Excel con diseño; se descargó la versión sencilla (CSV)");
+    }
+    b.disabled = false; b.textContent = texto;
   });
 
   // Actualiza la cuenta regresiva a medianoche

@@ -7,6 +7,12 @@
 <meta name="description" content="Plataforma de ahorro del colectivo coreográfico Danzantes del Cerrillo para el vestuario del Carnaval de Negros y Blancos.">
 <meta name="theme-color" content="#120B18">
 <link rel="icon" href="img/plumas.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/app-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Danzantes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Outfit:wght@400;500;600;700&display=swap">
@@ -140,6 +146,7 @@
         </div>
       </div>
 
+      <div class="mi-top sin-foto" id="miTop">
       <div class="card mi-ahorro">
         <div class="serp"></div>
         <div class="mi-ahorro-in">
@@ -169,6 +176,19 @@
           </div>
         </div>
       </div>
+
+      <figure class="vestuario" id="miVestuario" hidden aria-roledescription="carrusel" aria-label="Fotos del vestuario">
+        <div class="vestuario-fotos" id="miVestuarioFotos"></div>
+        <figcaption class="vestuario-pie">
+          <span class="eyebrow">Por esto ahorramos</span>
+          <b id="miVestuarioTexto">Nuestro vestuario</b>
+          <span class="vestuario-avance num" id="miVestuarioAvance">Llevas el 0 % de tu traje</span>
+          <div class="barra oscura"><i id="miVestuarioBarra" style="width:0%"></i></div>
+        </figcaption>
+        <div class="vestuario-puntos" id="miVestuarioPuntos" role="tablist" aria-label="Elegir foto"></div>
+      </figure>
+      </div>
+
 
       <div class="grid-side">
         <div class="card">
@@ -261,7 +281,7 @@
           <div class="eyebrow">Solo para la tesorería</div>
           <h1>Tesorería</h1>
         </div>
-        <button type="button" class="btn negro" id="btnExportar">Descargar Excel (CSV)</button>
+        <button type="button" class="btn negro" id="btnExportar">Descargar Excel</button>
       </div>
 
       <div class="card">
@@ -319,6 +339,26 @@
         </div>
         <div class="movs" id="tIntegrantes"></div>
       </div>
+
+      <section class="card form" id="formFoto">
+        <div class="card-head">
+          <div>
+            <h2>Fotos del vestuario</h2>
+            <p class="muted" style="margin-top:4px;font-size:13.5px">Cada integrante las ve junto a su avance y van cambiando solas. Sube hasta 8: el traje, el boceto, las telas, el tocado…</p>
+          </div>
+          <span class="muted num" id="fotosConteo"></span>
+        </div>
+        <div class="fotos-grid" id="fotosGrid"></div>
+        <div class="toolbar">
+          <label class="btn" for="fotoArchivo" id="btnAgregarFotos" style="cursor:pointer">Agregar fotos</label>
+          <input id="fotoArchivo" type="file" accept="image/jpeg,image/png,image/webp" multiple class="oculto-visual">
+          <span class="muted" style="font-size:13px">Puedes elegir varias a la vez.</span>
+        </div>
+        <label class="campo" style="max-width:520px">Título general
+          <input id="fotoTexto" maxlength="60" placeholder="Ej. Vestuario 2027 · Danzantes del Cerrillo">
+        </label>
+        <div class="msg" id="fotoMsg" role="status"></div>
+      </section>
 
       <form class="card form" id="formCfg" autocomplete="off">
         <h2>Ajustes del colectivo</h2>
@@ -379,6 +419,7 @@
 <script src="js/supabase-config.js"></script>
 <script src="js/servicio.js"></script>
 <script src="js/confeti.js"></script>
+<script src="js/excel.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -128,7 +128,7 @@ input:focus, select:focus { outline: none; border-color: var(--fucsia); box-shad
 .marca { display: flex; align-items: center; gap: 12px; }
 /* Logo del colectivo (versión clara para fondos oscuros) */
 .logo-top { height: 50px; width: auto; display: block; flex: none; }
-.logo-login { height: clamp(64px, 9vw, 92px); width: auto; display: block; filter: drop-shadow(0 4px 18px rgba(0,0,0,.45)); }
+.logo-login { height: clamp(64px, 9vw, 92px); width: auto; display: block; }
 .marca-sep { width: 2px; height: 34px; background: linear-gradient(180deg, var(--amarillo), var(--fucsia), var(--turquesa)); border-radius: 2px; flex: none; }
 .logo-cargando { height: 84px; width: auto; animation: flotar 2s ease-in-out infinite; }
 .marca-logo { width: 44px; height: 44px; border-radius: 12px; background: var(--serpentina); display: grid; place-items: center; }
@@ -334,4 +334,110 @@ body.app::before { content: ""; position: fixed; inset: 0 0 auto; height: env(sa
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* =============================================================
+   FOTO DEL VESTUARIO
+   ============================================================= */
+.mi-top { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.mi-top.sin-foto { grid-template-columns: minmax(0, 1fr); }
+.mi-top > .mi-ahorro { align-content: center; }
+.vestuario {
+  position: relative; margin: 0; min-height: 260px; border-radius: var(--radio); overflow: hidden;
+  background: var(--negro); box-shadow: var(--sombra); isolation: isolate;
+}
+.vestuario-fotos { position: absolute; inset: 0; z-index: -2; }
+.vestuario-fotos img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  opacity: 0; transform: scale(1.04); transition: opacity 1.1s ease, transform 6s ease-out;
+}
+.vestuario-fotos img.activa { opacity: 1; transform: scale(1); }
+.vestuario-puntos { position: absolute; top: 18px; right: 16px; display: flex; gap: 6px; z-index: 2; padding: 6px 8px; border-radius: 999px; background: rgba(10,6,14,.55); }
+.vestuario-puntos:empty { display: none; }
+.vestuario-puntos button {
+  width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,.55); box-shadow: 0 1px 3px rgba(0,0,0,.4); transition: width .3s, background .3s;
+}
+.vestuario-puntos button { position: relative; overflow: hidden; }
+.vestuario-puntos button[aria-selected="true"] { width: 26px; background: rgba(255,255,255,.35); }
+/* El punto activo se llena como barra de tiempo hasta la siguiente foto */
+.vestuario-puntos button[aria-selected="true"]::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 100%; border-radius: inherit; background: var(--amarillo);
+  transform-origin: left center; animation: llenarPunto 3s linear forwards;
+}
+@keyframes llenarPunto { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.vestuario::before { /* serpentina arriba, como la tarjeta de avance */
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--serpentina); z-index: 1;
+}
+.vestuario::after { /* degradado para que el texto se lea sobre cualquier foto */
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(10,6,14,0) 35%, rgba(10,6,14,.55) 62%, rgba(10,6,14,.92) 100%);
+}
+.vestuario-pie { position: absolute; inset: auto 0 0 0; padding: 18px 20px 20px; display: grid; gap: 6px; color: #FFFFFF; }
+.vestuario-pie .eyebrow { color: var(--amarillo); }
+.vestuario-pie b { font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1.15; text-wrap: balance; overflow-wrap: anywhere; }
+.vestuario-avance { font-size: 13.5px; opacity: .9; }
+.vestuario-pie .barra { height: 8px; margin-top: 2px; }
+
+/* Editor de la foto (tesorería) */
+.foto-editor { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.foto-previa {
+  aspect-ratio: 4 / 5; max-width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface);
+  border: 2px dashed var(--line); display: grid; place-items: center;
+}
+.foto-previa.con-foto { border-style: solid; border-color: transparent; }
+.foto-previa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-vacia { display: grid; gap: 4px; text-align: center; color: var(--muted); font-size: 13px; padding: 16px; }
+.foto-vacia b { color: var(--ink); font-size: 15px; }
+.oculto-visual { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+label.btn:has(+ .oculto-visual:focus-visible) { outline: 3px solid var(--turquesa); outline-offset: 2px; }
+
+/* =============================================================
+   APP EN EL CELULAR (aviso para instalar)
+   ============================================================= */
+.instalar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: var(--card); border-radius: var(--radio); box-shadow: var(--sombra); padding: 14px 18px;
+  border-left: 5px solid var(--amarillo);
+}
+.instalar img { width: 40px; height: 40px; border-radius: 10px; background: var(--negro); padding: 4px; flex: none; }
+.instalar-txt { display: grid; gap: 2px; flex: 1 1 220px; min-width: 0; font-size: 13.5px; color: var(--muted); }
+.instalar-txt b { color: var(--ink); font-size: 15px; }
+.instalar-acciones { display: flex; align-items: center; gap: 14px; }
+
+@media (max-width: 900px) {
+  .mi-top { grid-template-columns: minmax(0, 1fr); }
+  .vestuario { min-height: 0; aspect-ratio: 4 / 3.4; }
+}
+@media (max-width: 560px) {
+  .foto-editor { grid-template-columns: minmax(0, 1fr); }
+  .foto-previa { max-width: 260px; }
+}
+/* Cuando se abre como app instalada, se respeta la barra del celular */
+@media (display-mode: standalone) {
+  .instalar { display: none !important; }
+}
+
+/* Fotos del vestuario: cuadrícula de la tesorería */
+.fotos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+.foto-item { display: grid; gap: 8px; min-width: 0; }
+.foto-item-img { position: relative; aspect-ratio: 4 / 5; border-radius: 12px; overflow: hidden; background: var(--surface); }
+.foto-item-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foto-num {
+  position: absolute; top: 8px; left: 8px; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px;
+  display: grid; place-items: center; background: var(--negro); color: var(--amarillo); font-weight: 700; font-size: 12.5px;
+}
+.foto-item input { padding: 7px 10px; font-size: 13.5px; }
+.foto-acciones { display: flex; align-items: center; gap: 6px; }
+.foto-acciones .link { margin-left: auto; }
+.icono-btn {
+  width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+  font-weight: 700; cursor: pointer; display: grid; place-items: center; padding: 0;
+}
+.icono-btn:hover:not([disabled]) { border-color: var(--ink); }
+.icono-btn[disabled] { opacity: .35; cursor: default; }
+label.btn.deshabilitado { opacity: .55; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .vestuario-fotos img { transition: opacity .4s ease !important; transform: none; }
+  .vestuario-puntos button[aria-selected="true"]::after { animation: none !important; transform: none; }
 }

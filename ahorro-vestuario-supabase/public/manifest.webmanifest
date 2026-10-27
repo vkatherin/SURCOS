@@ -1,0 +1,17 @@
+{
+  "name": "Danzantes del Cerrillo · Ahorro del Vestuario",
+  "short_name": "Danzantes",
+  "description": "Ahorro del colectivo para el vestuario del Carnaval de Negros y Blancos.",
+  "lang": "es-CO",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#120B18",
+  "theme_color": "#120B18",
+  "icons": [
+    { "src": "img/app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

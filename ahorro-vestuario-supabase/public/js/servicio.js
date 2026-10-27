@@ -36,6 +36,7 @@
       else if (m.includes("failed to fetch") || m.includes("network")) code = "auth/network-request-failed";
       else if (c === "42501" || m.includes("row-level security") || m.includes("permission denied") || m.includes("solo la tesorería")) code = "permission-denied";
       else if (c === "23505") code = "duplicado";
+      else if (m.includes("bucket not found") || m.includes("could not find the") || c === "PGRST204") code = "falta-sql";
       console.error("Supabase:", e);
       return error(code, e.message);
     }
@@ -106,6 +107,20 @@
           if (tabla === "integrantes") ok(await sb.from("aportes").delete().eq("integrante_id", id));
           ok(await sb.from(tabla).delete().eq("id", id));
         }
+      },
+      archivos: {
+        // Sube una imagen al espacio "vestuario" y devuelve su enlace público
+        async subir(blob, nombre) {
+          const ruta = Date.now() + "-" + nombre;
+          ok(await sb.storage.from("vestuario").upload(ruta, blob, { contentType: blob.type, upsert: false }));
+          const { data } = sb.storage.from("vestuario").getPublicUrl(ruta);
+          return { url: data.publicUrl, ruta };
+        },
+        async borrar(ruta) {
+          if (!ruta) return;
+          const r = await sb.storage.from("vestuario").remove([ruta]);
+          if (r.error) console.warn("No se pudo borrar la foto anterior:", r.error.message);
+        }
       }
     };
   }
@@ -166,13 +181,24 @@
           return () => { oyentes[c] = (oyentes[c] || []).filter(f => f !== cb); };
         },
         async agregar(c, d) { const id = nuevoId(); (datos[c] = datos[c] || {})[id] = d; guardarTodo(); return { id }; },
-        async guardar(c, id, d) { (datos[c] = datos[c] || {})[id] = d; guardarTodo(); },
+        async guardar(c, id, d) { const t = (datos[c] = datos[c] || {}); t[id] = Object.assign({}, t[id] || {}, d); guardarTodo(); },
         async actualizar(c, id, d) { if (!datos[c] || !datos[c][id]) throw error("not-found"); Object.assign(datos[c][id], d); guardarTodo(); },
         async borrar(c, id) {
           if (c === "integrantes" && datos.aportes) Object.keys(datos.aportes).forEach(k => { if (datos.aportes[k].integranteId === id) delete datos.aportes[k]; });
           if (datos[c]) delete datos[c][id];
           guardarTodo();
         }
+      },
+      archivos: {
+        subir(blob) {
+          return new Promise((ok, mal) => {
+            const r = new FileReader();
+            r.onload = () => ok({ url: r.result, ruta: "" });
+            r.onerror = () => mal(error("archivo"));
+            r.readAsDataURL(blob);
+          });
+        },
+        async borrar() {}
       }
     };
   }
